@@ -11,7 +11,7 @@ while [[ "$#" -gt 0 ]]; do
     shift
     ;;
   -l | --list)
-    find "$HOME/bin" -name "*.synconfig" ! -name "_template.synconfig" -exec basename {} \; | sed 's/\.synconfig$//'
+    find "$HOME/bin" -name "*.synconfig" ! -name "__template.synconfig" -exec basename {} \; | sed 's/\.synconfig$//'
     exit 0
     ;;
   *)

@@ -3,10 +3,10 @@
 
 PS1="\w: "
 
-export NGROK_UN=
-export NGROK_PW=
-export NGROK_OAUTH_EMAIL=
-export NGROK_SUBDOMAIN=
+export NGROK_UN=epschlegel
+export NGROK_PW=!_nanite.Paroxysm
+export NGROK_OAUTH_EMAIL=epschlegel@gmail.com
+export NGROK_SUBDOMAIN=esch
 
 export PATH=$HOME/bin:$PATH
 

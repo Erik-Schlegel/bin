@@ -3,4 +3,4 @@
 __pycache__
 
 *.synconfig
-!_template.synconfig
+!__template.synconfig
