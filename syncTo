@@ -36,9 +36,28 @@ for EXCLUDE in $EXCLUSIONS; do
   EXCLUDE_OPTIONS+="--exclude '$EXCLUDE' "
 done
 
+
+# Check if sshpass is installed
+if ! command -v sshpass &>/dev/null; then
+  echo "sshpass is not installed. Please install it using 'sudo apt install sshpass' or 'sudo yum install sshpass'."
+  exit 1
+fi
+
+# Check if inotifywait is installed
+if ! command -v inotifywait &>/dev/null; then
+  echo "inotifywait is not installed. Please install it using 'sudo apt install inotify-tools' or 'sudo yum install inotify-tools'."
+  exit 1
+fi
+
+RSYNC_COMMAND="sshpass -p '$REMOTE_PASSWORD' rsync -avzt --checksum --progress --delete '$LOCAL_DIR/' '$REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR' $EXCLUDE_OPTIONS"
+
+# Do initial sync
+echo "Initial sync started."
+eval $RSYNC_COMMAND
+echo -e "Initial sync complete.\n"
+
 # Monitor the local directory for changes and sync to the remote directory
 inotifywait -m -r -e modify,create,delete,move "$LOCAL_DIR" --format '%w%f' | while read FILE; do
-  RSYNC_COMMAND="sshpass -p '$REMOTE_PASSWORD' rsync -avzt --checksum --progress --delete '$LOCAL_DIR' '$REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR' $EXCLUDE_OPTIONS"
   eval $RSYNC_COMMAND
   echo "done"
 done

@@ -3,7 +3,7 @@ LOCAL_DIR="/home/<path>"
 REMOTE_DIR="<path>"
 
 # Any files or directories to exclude from the sync. This will leave them untouched on the remote server.
-EXCLUSIONS=".git venv/ node_modules"
+EXCLUSIONS=".git .gitignore *.md LICENSE documentation/ node_modules/ venv/"
 
 # Credentials for the remote server.
 REMOTE_HOST="<ip_address>"
