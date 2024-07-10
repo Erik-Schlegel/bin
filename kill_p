@@ -1,0 +1,18 @@
+#!/bin/sh
+# Kill the tasks using a specified localhost port.
+
+if	[ -z "$1" ]
+    then
+        echo "Specify a port to kill.";
+        return 1; #exit function
+    else
+        pid=`lsof -i -P | grep $1 | tr -s ' ' | cut -d ' ' -f 2 | sort --unique`;
+        echo $pid;
+        if	[ -z "$pid" ]
+            then
+                echo "No PIDs were using port $1.";
+            else
+                kill -9 $pid;
+                echo "PIDs using port $1 have been killed.";
+        fi
+fi

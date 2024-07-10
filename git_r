@@ -1,0 +1,9 @@
+#!/bin/sh
+
+. $(dirname $0)/lib/GitLib.sh;
+
+mainBranch=$(GitLib_GetMasterOrMain);
+git checkout $mainBranch;
+git pull;
+# git fetch --all;
+# git reset --hard origin/$mainBranch;

@@ -1,0 +1,11 @@
+# The path to the local "from" directory to sync with the remote "to" directory.
+LOCAL_DIR="/home/<path>"
+REMOTE_DIR="<path>"
+
+# Any files or directories to exclude from the sync. This will leave them untouched on the remote server.
+EXCLUSIONS=".git venv/ node_modules"
+
+# Credentials for the remote server.
+REMOTE_HOST="<ip_address>"
+REMOTE_USER="<user>"
+REMOTE_PASSWORD="<password>"

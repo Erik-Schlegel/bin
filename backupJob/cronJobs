@@ -1,0 +1,7 @@
+
+# cron needs PATH variable set
+PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
+
+# run this script EVERY 5 MIN
+*/1    *    *    *    *    ~/bin/backupJob/backupJob.sh /mnt/c/Neurocloud/Dropbox/3D/Blender/Donut/ /mnt/d/Backups/3D/Blender/Donut /home/esch/bin/backupConfig/blender.exclude
+*/1    *    *    *    *    ~/bin/backupJob/backupJob.sh /mnt/c/Neurocloud/Dropbox/3D/Blender/Subway/ /mnt/d/Backups/3D/Blender/Subway /home/esch/bin/backupConfig/blender.exclude

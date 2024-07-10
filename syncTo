@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# Default config file
+CONFIG_FILE="my.synconfig"
+
+# Parse command line options for --config or -c flag
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+  -c | --config)
+    CONFIG_FILE="$HOME/bin/$2.synconfig"
+    shift
+    ;;
+  -l | --list)
+    find "$HOME/bin" -name "*.synconfig" ! -name "_template.synconfig" -exec basename {} \; | sed 's/\.synconfig$//'
+    exit 0
+    ;;
+  *)
+    echo "Unknown parameter passed: $1"
+    exit 1
+    ;;
+  esac
+  shift
+done
+
+# Source the specified config file
+source "$CONFIG_FILE"
+
+# Check if LOCAL_DIR exists
+if [ ! -d "$LOCAL_DIR" ]; then
+  echo "Local directory $LOCAL_DIR does not exist."
+  exit 1
+fi
+
+EXCLUDE_OPTIONS=""
+for EXCLUDE in $EXCLUSIONS; do
+  EXCLUDE_OPTIONS+="--exclude '$EXCLUDE' "
+done
+
+# Monitor the local directory for changes and sync to the remote directory
+inotifywait -m -r -e modify,create,delete,move "$LOCAL_DIR" --format '%w%f' | while read FILE; do
+  RSYNC_COMMAND="sshpass -p '$REMOTE_PASSWORD' rsync -avzt --checksum --progress --delete '$LOCAL_DIR' '$REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR' $EXCLUDE_OPTIONS"
+  eval $RSYNC_COMMAND
+  echo "done"
+done

@@ -1,0 +1,45 @@
+#!/bin/sh
+# GIT delete branch by full or partial name.
+
+. $(dirname $0)/lib/GitLib.sh;
+
+
+if	[ -z "$1" ] || [ "$1" = "-p" ]
+		then
+			echo "Specify branch to delete.";
+			return 1; #exit function
+	fi
+
+	mainBranch=$(GitLib_GetMasterOrMain);
+	if [ $(GitLib_IsCurrentBranchMaster) = "0" ]
+		then
+			git checkout $mainBranch;
+	fi
+
+	if [ "$2" = "-b" ]
+		then
+			# Delete using a full branch name.
+			GitLib_DeleteLocalBranch $1;
+		else
+			response=$(GitLib_GetBranchNameFromPartial $1);
+			case $response in
+				'0')
+					echo -e "\nNo branch containing '$1' exists locally.\n";
+				;;
+				'2')
+					echo -e "\nBe more specific. The partial name '$1' exists in multiple local branches:";
+					git branch | grep $1 -i;
+					echo "";
+				;;
+				*)
+          read -p "Delete local branch '$response'? (y/n)  " confirmResponse
+          if [ $confirmResponse = "y" ]
+            then
+                GitLib_DeleteLocalBranch $response;
+                echo 'Local branch deleted.';
+            else
+              echo "Delete aborted.";
+          fi
+				;;
+			esac
+	fi

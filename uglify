@@ -1,0 +1,29 @@
+#!/bin/sh
+# uglify a specified js file
+
+if	[ -z "$1" ]
+	then
+		echo "Specify a js file to uglify.";
+		return 1; #exit function
+	else
+		# set file equal to $1
+		file=$1;
+
+		#if the file doesn't exist exit
+		if [ ! -f $file ]; then
+			echo "File does not exist.";
+			return 1;
+		fi
+
+		if	[ "${file##*.}" = "js" ]
+			then
+				file=${file%.js};
+		fi
+
+		#uglify with source map
+		npx uglify-js $1 -cmo $file.min.js --source-map "url='$file.min.js.map'"
+
+		echo 'done';
+
+fi
+

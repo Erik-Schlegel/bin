@@ -1,0 +1,25 @@
+#!/bin/sh
+# GIT checkout existing branch by full or partial match name.
+
+. $(dirname $0)/lib/GitLib.sh;
+
+
+if [ -z $1 ]
+    then
+        echo "GIT checkout existing branch by partial match name. For Example: \"git_c 711\" will checkout \"Address-Poor-KPIs-On-SEO-Pages-Phase-1B/ACQUIRE-711\" if it exists.";
+    else
+        response=$(GitLib_GetBranchNameFromPartial $1);
+        case $response in
+            '0')
+                echo -e "\nNo branch containing '$1' exists locally.\n";
+            ;;
+            '2')
+                echo -e "\nBe more specific. The partial name '$1' exists in multiple local branches:";
+                git branch | grep $1 -i;
+                echo "";
+            ;;
+            *)
+                git checkout $response;
+            ;;
+        esac
+fi

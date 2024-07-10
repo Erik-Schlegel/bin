@@ -1,0 +1,59 @@
+#!/bin/bash
+
+ngrok_command="ngrok http";
+flags="--domain=$NGROK_SUBDOMAIN.ngrok.io"
+inspect="false";
+port="5173"
+
+random_string=$(tr -dc 'a-zA-Z0-9!@#$%^&*-=?,./' < /dev/urandom | fold -w 10 | head -n 1)
+basicAuth="$NGROK_UN:$random_string";
+
+process_option()
+{
+    case $1 in
+        i)
+            inspect="true"
+            ;;
+        a)
+            echo "Url will be: http://$basicAuth@$NGROK_SUBDOMAIN.ngrok.io";
+            read -p "Press enter to continue";
+            flags+=" --basic-auth=$basicAuth";
+            ;;
+        o)
+            flags+=" --oauth=google --oauth-allow-email $NGROK_OAUTH_EMAIL"
+            ;;
+        *)
+            echo "Invalid option: -$1" >&2
+            exit 1
+            ;;
+    esac
+}
+
+
+for arg in "$@"; do
+
+    if [[ $arg == -* && ${#arg} > 2 ]]; then
+        # Handle grouped flags like -io
+        for (( i=1; i<${#arg}; i++ )); do
+            process_option "${arg:$i:1}"
+        done
+
+    elif [[ $arg == -* ]]; then
+        # Handle single character flags like -i or -o
+        process_option "${arg:1}"
+
+    elif [[ $arg =~ ^[0-9]+$ ]]; then
+        # Append port directly if argument is numeric
+        port="$arg"
+
+    else
+        echo "Invalid argument: $arg" >&2
+        exit 1
+    fi
+done
+
+flags+=" --inspect=$inspect"
+
+
+# echo "$ngrok_command $port $flags"
+eval "$ngrok_command $port $flags"

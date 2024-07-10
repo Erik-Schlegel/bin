@@ -1,0 +1,25 @@
+#!/bin/sh
+# GIT compare latest file in present branch to main.
+
+# To set vscode as default git editor...
+# git config --global -e t
+
+# Set this as the gitconfig content
+# [core]
+#   editor = code --wait
+# [diff]
+#   tool = vscode
+# [difftool "vscode"]
+#   cmd = code --wait --diff $LOCAL $REMOTE
+# [merge]
+#   tool = vscode
+# [mergetool "vscode"]
+#   cmd = code --wait $MERGED
+
+if [ -z $1 ]
+	then
+		echo "Specify a file path to compare. For Example: git_compareToMain ZebitPaymentSystem/src/public/media/js/registration.js";
+	else
+		echo "Y" | git difftool origin:$1 HEAD:$1 > /dev/null;
+
+fi

@@ -1,0 +1,4 @@
+#!/bin/sh
+#copy all staged files to clipboard
+
+git diff --name-only --staged | pbcopy; 

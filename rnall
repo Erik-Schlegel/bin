@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# check and see if "rename" is an installed command
+if ! [ -x "$(command -v rename)" ]; then
+    echo "rename is not installed. Please install it using 'brew install rename' or 'sudo apt install rename'"
+    exit 1
+fi
+
+
+# Check if argument is provided
+if [ $# -eq 0 ]; then
+    echo "No arguments provided. Please provide a string to remove from one or more file names."
+    exit 1
+fi
+
+# Use the argument in the rename command
+rename "s/$1//" *

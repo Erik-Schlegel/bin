@@ -1,0 +1,13 @@
+#!/bin/sh
+# GIT get content of a specified pull request by it's number.
+
+
+if [ -d .git ]
+    then
+        read -p 'What is the number of the PR you wish to pull? ' prnumber;
+        read -p 'What is the name of the local brach to which you want to pull this PR? ' branchname;
+        git fetch origin pull/$prnumber/head:$branchname;
+        echo 'done';
+    else
+        echo 'The current directory is not a git repository.'.
+fi;

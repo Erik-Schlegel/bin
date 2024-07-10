@@ -1,0 +1,23 @@
+#!/bin/sh
+# GIT commits made in a specified date range.
+
+. $(dirname $0)/lib/GitLib.sh;
+
+# cls;
+if [ -z "$1" ] || [ -z "$2" ]
+    then
+        echo -e "
+Logs commits made to master|main after a specified start and before a specified end date.
+    Accepts date-format \"Mmm DD YYYY\" (e.g. git_l \"Jan 2 2020\" \"Jan 13 2020\" which gets values from Jan 3 - Jan 12)
+    If -w is specified, the output is saved to git-log.txt and the file is opened in vs code.
+        ";
+    else
+        mainBranch=$(GitLib_GetMasterOrMain);
+        if [ "$3" = "-w" ]
+            then
+                git log origin/$mainBranch --pretty="%ad :: %an %n %s %n %H %n" --date=human --after="$1" --until="$2" > $JOURNAL/gitlog.txt;
+                code ~/JOURNAL/gitlog.txt;
+            else
+                git log origin/$mainBranch --pretty="%ad :: %an %n %s %n %H %n" --date=human --after="$1" --until="$2";
+        fi
+fi

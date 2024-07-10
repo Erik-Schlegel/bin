@@ -1,0 +1,16 @@
+#!/bin/sh
+
+## Example usage:
+##    backup
+##    backup stop
+
+if [ "$1" = "stop" ]; then
+    echo "Stopping backup script...";
+    sudo /sbin/service cron stop
+    crontab -r
+else
+    echo "Starting backup script...";
+    crontab ~/bin/backupJob/cronJobs
+    sudo /sbin/service cron stop
+    sudo /sbin/service cron start
+fi

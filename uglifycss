@@ -1,0 +1,29 @@
+#!/bin/sh
+# uglify a specified css file
+
+if	[ -z "$1" ]
+	then
+		echo "Specify a css file to uglify.";
+		return 1; #exit function
+	else
+		# set file equal to $1
+		file=$1;
+
+		#if the file doesn't exist exit
+		if [ ! -f $file ]; then
+			echo "File does not exist.";
+			return 1;
+		fi
+
+		if	[ "${file##*.}" = "css" ]
+			then
+				file=${file%.css};
+		fi
+
+		#uglify
+		npx uglifycss $1 > $file.min.css
+
+		echo 'done';
+
+fi
+

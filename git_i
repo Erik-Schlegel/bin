@@ -1,0 +1,23 @@
+#!/bin/sh
+# Initialize current folder as a new tracked repo at github.
+
+read -p "Are there changes ready to commit? (y/n)  " changesReady
+
+if [ $changesReady = "y" ]
+	then
+
+		read -p "Github uri path:  " uriPath
+
+		if [ ! -z "$uriPath" ]
+			then
+				git init -b main
+				git add .
+				git commit -m "Initializing ${PWD##*/}"
+				git remote add origin $uriPath
+				git remote -v
+				git push origin main
+		fi
+
+else
+	echo "Initialize aborted. Add a file before initializing.";
+fi

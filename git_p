@@ -1,0 +1,12 @@
+#!/bin/sh
+
+. $(dirname $0)/lib/GitLib.sh;
+
+if [ $(GitLib_IsCurrentBranchMaster) = "0" ]
+    then
+        git push origin $(GitLib_GetCurrentBranchName);
+		##git push --set-upstream origin TwoNumberSum
+    else
+        echo 'Do not push master.';
+fi
+

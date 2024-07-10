@@ -1,0 +1,6 @@
+#!/bin/sh
+# List all my personal scripts
+
+echo '\r';
+(cd ~/bin && ls -1 -Ilib -Ireadme.md -IbackupConfig)
+echo '\r';

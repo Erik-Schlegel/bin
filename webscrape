@@ -1,0 +1,107 @@
+#!/bin/bash
+
+# Function to display usage information
+usage() {
+   echo "Usage: scrape_ogg.sh <url> [-o <output_folder>] [-s <selector>] [-i]"
+   echo "  <url>: The URL of the page to scrape (required unless -i is specified)"
+   echo "  -o: The output folder to save the files (optional, default: current directory)"
+   echo "  -s: The file selector. A path to a python file which defines a get_urls function"
+   echo "  -i: Install necessary packages (optional)"
+   exit 1
+}
+
+# Function to install necessary packages
+install_packages() {
+   echo "Installing necessary packages..."
+   sudo apt-get update
+   sudo apt-get install -y python3 python3-venv python3-pip chromium-chromedriver
+   echo "All packages installed successfully."
+}
+
+# Parse command-line arguments
+URL=""
+OUTPUT_DIR=""
+SELECTOR=""
+INSTALL_FLAG=false
+
+while getopts ":o:s:i" opt; do
+   case ${opt} in
+   o)
+      OUTPUT_DIR=$OPTARG
+      ;;
+   s)
+      SELECTOR=$OPTARG
+      ;;
+   i)
+      INSTALL_FLAG=true
+      ;;
+   \?)
+      echo "Invalid option: -$OPTARG" >&2
+      usage
+      ;;
+   :)
+      echo "Option -$OPTARG requires an argument." >&2
+      usage
+      ;;
+   esac
+done
+shift $((OPTIND - 1))
+URL=$1
+
+# If the -i flag is set, install the necessary packages and exit
+if $INSTALL_FLAG; then
+   install_packages
+   python3 -m venv scrape_venv
+   source scrape_venv/bin/activate
+   pip install selenium requests
+   deactivate
+   echo "Virtual environment and packages installed successfully."
+   exit 0
+fi
+
+# Check if the URL and selector are provided
+if [ -z "$URL" ]; then
+   echo "Error: URL is required unless the -i flag is set."
+   usage
+fi
+
+# Check if Python is installed
+if ! command -v python3 &>/dev/null; then
+   echo "Python is not installed. Please run the script with the -i option to install it."
+   exit 1
+fi
+
+# Check if virtual environment exists
+if [ ! -d "scrape_venv" ]; then
+   echo "Virtual environment not found. Please run the script with the -i option to create it."
+   exit 1
+fi
+
+# Activate the virtual environment
+source scrape_venv/bin/activate
+
+# Check if necessary tools are installed
+if ! command -v chromedriver &>/dev/null; then
+   echo "chromedriver is not installed. Please run the script with the -i option to install it."
+   deactivate
+   exit 1
+fi
+
+# Check if necessary Python packages are installed
+if ! python3 -c "import selenium, requests" &>/dev/null; then
+   echo "Necessary Python packages are not installed. Please run the script with the -i option to install them."
+   deactivate
+   exit 1
+fi
+
+# Construct the Python command
+COMMAND="python3 $HOME/bin/webscrape_script.py \"$URL\" -s \"$SELECTOR\""
+if [ -n "$OUTPUT_DIR" ]; then
+   COMMAND="$COMMAND -o \"$OUTPUT_DIR\""
+fi
+
+# Execute the Python script
+eval $COMMAND
+
+# Deactivate the virtual environment
+deactivate

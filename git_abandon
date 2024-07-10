@@ -1,0 +1,5 @@
+
+#!/bin/sh
+# GIT discard changes in working directory.
+
+git checkout -- .;

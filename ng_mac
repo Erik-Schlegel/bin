@@ -1,0 +1,33 @@
+#!/bin/zsh
+
+auth="$NGROK_UN:$NGROK_PW";
+port="5500";
+inspect="false"
+
+
+while getopts ":p:ai" opt; do
+	case ${opt} in
+		a )
+			auth=""
+			;;
+		i )
+			read -p "Open http://localhost:4040/inspect/http to inspect request details. Press [Enter] to continue..."
+			inspect="true"
+			;;
+		p )
+			port=$OPTARG
+			;;
+		\? )
+			echo "Invalid option: $OPTARG" 1>&2
+			exit 1;
+			;;
+		: )
+			echo "Invalid option: $OPTARG requires an argument" 1>&2
+			exit 1
+			;;
+	esac
+done
+shift $((OPTIND -1))
+
+
+ngrok http ${1:-5500} -subdomain=$NGROK_SUBDOMAIN -inspect=$inspect -auth=$auth;

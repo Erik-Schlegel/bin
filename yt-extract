@@ -1,0 +1,99 @@
+#!/bin/bash
+
+# Function to display usage information
+usage() {
+   echo "Usage: <youtube_url> [-s <start_time>] [-e <end_time>] [-o <output_path>]"
+   echo "  <youtube_url>: YouTube URL (required)"
+   echo "  -s: Start time (optional, format: hh:mm:ss or mm:ss)"
+   echo "  -e: End time (optional, format: hh:mm:ss or mm:ss)"
+   echo "  -o: Output path (optional, default: current directory)"
+   exit 1
+}
+
+# Parse command-line arguments
+YOUTUBE_URL=$1
+shift
+
+while getopts ":s:e:o:" opt; do
+   case ${opt} in
+   s)
+      START_TIME=$OPTARG
+      ;;
+   e)
+      END_TIME=$OPTARG
+      ;;
+   o)
+      OUTPUT_DIR=$OPTARG
+      ;;
+   \?)
+      echo "Invalid option: -$OPTARG" >&2
+      usage
+      ;;
+   :)
+      echo "Option -$OPTARG requires an argument." >&2
+      usage
+      ;;
+   esac
+done
+
+# Check if the YouTube URL is provided
+if [ -z "$YOUTUBE_URL" ]; then
+   echo "Error: YouTube URL is required."
+   usage
+fi
+
+# Function to install yt-dlp
+install_yt_dlp() {
+   echo "Installing yt-dlp..."
+   curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o ~/.local/bin/yt-dlp
+   chmod a+rx ~/.local/bin/yt-dlp
+   echo "yt-dlp installed successfully."
+}
+
+# Function to update yt-dlp
+update_yt_dlp() {
+   echo "Updating yt-dlp..."
+   curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o ~/.local/bin/yt-dlp
+   chmod a+rx ~/.local/bin/yt-dlp
+   echo "yt-dlp updated successfully."
+}
+
+# Check if yt-dlp is installed
+if ! command -v ~/.local/bin/yt-dlp &>/dev/null; then
+   install_yt_dlp
+else
+   # Check if yt-dlp is out of date
+   LATEST_VERSION=$(curl -s https://github.com/yt-dlp/yt-dlp/releases/latest | grep -oP 'v\K[0-9]+\.[0-9]+\.[0-9]+')
+   INSTALLED_VERSION=$(~/.local/bin/yt-dlp --version | grep -oP '^[0-9]+\.[0-9]+\.[0-9]+')
+
+   if [ "$LATEST_VERSION" != "$INSTALLED_VERSION" ]; then
+      update_yt_dlp
+   else
+      echo "yt-dlp is up to date."
+   fi
+fi
+
+# Set default output directory to current directory if not specified
+OUTPUT_DIR=${OUTPUT_DIR:-"."}
+
+# Construct the yt-dlp command
+COMMAND="~/.local/bin/yt-dlp -x --audio-format mp3 -o \"$OUTPUT_DIR/%(title)s.%(ext)s\" \"$YOUTUBE_URL\""
+
+# Add start time and end time if specified
+if [ -n "$START_TIME" ]; then
+   COMMAND="$COMMAND --postprocessor-args \"-ss $START_TIME\""
+fi
+if [ -n "$END_TIME" ]; then
+   COMMAND="$COMMAND --postprocessor-args \"-to $END_TIME\""
+fi
+
+# Execute the command
+eval $COMMAND
+
+# Notify completion
+if [ $? -eq 0 ]; then
+   echo "Audio extracted successfully and saved in $OUTPUT_DIR"
+else
+   echo "Failed to extract audio"
+   exit 1
+fi

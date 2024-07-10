@@ -1,0 +1,7 @@
+#!/bin/sh
+# get changes in branch
+
+#git whatchanged --name-only origin..HEAD;
+echo '\n';
+git diff --name-only origin..HEAD;
+echo '\n';

@@ -1,0 +1,4 @@
+#!/bin/sh
+# Restart Ubuntu gnome shell to rid of any ui glitches -- usually after coming back from suspend.
+
+killall -3 gnome-shell

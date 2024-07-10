@@ -1,0 +1,4 @@
+#!/bin/sh
+# get changes in branch
+
+git whatchanged --name-only origin..HEAD;
