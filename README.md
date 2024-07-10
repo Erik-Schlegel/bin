@@ -1,5 +1,5 @@
 # Linux Customizations
-My ongoing growing (ongrowing?) collection of helper bash scripts which maximize --laziness-- efficiency.
+My ongoing growing (ongrowing?) collection of helper bash scripts which maximize ~~laziness~~ efficiency.
 
 ## Instructions
 - Clone this repo to ~/
