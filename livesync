@@ -49,15 +49,27 @@ if ! command -v inotifywait &>/dev/null; then
   exit 1
 fi
 
-RSYNC_COMMAND="sshpass -p '$REMOTE_PASSWORD' rsync -avzt --checksum --progress --delete '$LOCAL_DIR/' '$REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR' $EXCLUDE_OPTIONS"
+RSYNC_COMMAND="sshpass -p '$REMOTE_PASSWORD' rsync -azt --checksum --delete '$LOCAL_DIR/' '$REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR' $EXCLUDE_OPTIONS"
 
 # Do initial sync
-echo "Initial sync started."
+echo -n "Initial sync..."
 eval $RSYNC_COMMAND
-echo -e "Initial sync complete.\n"
+echo -e "complete.\n"
+
+
 
 # Monitor the local directory for changes and sync to the remote directory
+LAST_SYNC_FILE=""
+LAST_SYNC_TIME=0
+DEBOUNCE_INTERVAL=2 # seconds
+
 inotifywait -m -r -e modify,create,delete,move "$LOCAL_DIR" --format '%w%f' | while read FILE; do
-  eval $RSYNC_COMMAND
-  echo "done"
+  CURRENT_TIME=$(date +%s)
+  # Debounce events which are essentially dupes. It happens...
+  if [[ "$FILE" != "$LAST_SYNC_FILE" || $((CURRENT_TIME - LAST_SYNC_TIME)) -ge $DEBOUNCE_INTERVAL ]]; then
+    eval $RSYNC_COMMAND
+    echo "$FILE @$(date +%I:%M:%S%p)"
+    LAST_SYNC_FILE="$FILE"
+    LAST_SYNC_TIME=$CURRENT_TIME
+  fi
 done
