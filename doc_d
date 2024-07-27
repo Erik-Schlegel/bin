@@ -2,7 +2,7 @@
 # Accept two flags -a and -n to delete all images or only the ones with the <none> tag
 
 if [ "$1" = "-a" ]; then
-    docker rmi $(docker images -q)
+    docker rmi -f $(docker images -q)
 elif [ "$1" = "-n" ]; then
     docker rmi -f $(docker images | grep "^<none>" | awk '{print $3}')
 else
