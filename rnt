@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# rename the current terminal window with a given string
+# usage: rnt <new name>
+
+# if no argument is given, print usage
+if [ -z "$1" ]; then
+  echo "usage: rnt <new name>"
+  exit 1
+fi 
+
+printf '\033]0;%s\007' "$1"
