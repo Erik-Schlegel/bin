@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if ! command -v xsel &> /dev/null
+then
+    echo "xsel could not be found. Install it with 'sudo apt install xsel'"    
+    exit 1
+fi
+
+xsel --input --clipboard
