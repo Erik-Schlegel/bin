@@ -55,5 +55,5 @@ done
 flags+=" --inspect=$inspect"
 
 
-# echo "$ngrok_command $port $flags"
+echo "$ngrok_command $port $flags"
 eval "$ngrok_command $port $flags"

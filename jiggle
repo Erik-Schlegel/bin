@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Script to move the mouse pointer randomly after a certain period of inactivity
+
+#requires:
+# 'xprintidle' for inactivity check (in ms)
+# 'xdotool' to move the mouse pointer
+
+#parameters:
+# 30000 idle time in ms before executing the mousemove
+# 800 / 600: your screen resolution, at at least the moving range for the mouse pointer
+
+while :; do
+	if  [ $(xprintidle) -gt 30000 ]
+	then
+		xdotool mousemove $(echo $(( ${RANDOM} % 800 ))) $(echo $(( ${RANDOM} % 600 )))
+		# xdotool mousemove `rand -M 800` `rand -M 600`;
+	fi
+
+	sleep 5 # check every 5 seconds
+done

@@ -1,0 +1,114 @@
+#!/bin/bash
+
+# Extract audio from a YouTube video and save it as an MP3 file.
+
+install_yt_dlp()
+{
+	echo "Installing yt-dlp..."
+	sudo wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp &> /dev/null
+	sudo chmod a+rx /usr/local/bin/yt-dlp &> /dev/null
+	echo "yt-dlp installed successfully."
+}
+
+
+uninstall_yt_dlp()
+{
+	sudo rm -f /usr/local/bin/yt-dlp
+	sudo rm -f /usr/bin/yt-dlp
+	sudo rm -f /bin/yt-dlp
+	echo "yt-dlp uninstalled successfully."
+}
+
+
+show_help()
+{
+	echo "Usage: $0 [options] <output_file> <url>"
+    echo "Options:"
+    echo "  -u                Uninstall yt-dlp"
+    echo "  -h                Show this help message"
+    echo "  -t <title>        Set the title metadata"
+    echo "  -a <artist>       Set the artist metadata"
+}
+
+
+assign_metadata()
+{
+	local file=$1
+	local title=$2
+	local artist=$3
+
+	mv "$file" "temp_$file"
+	if [ -n "$title" ]; then
+		ffmpeg -i "temp_$file" -metadata title="$title" -metadata artist="$artist" $file
+	fi
+	rm "temp_$file"
+}
+
+
+download_audio()
+{
+	local output_file=$1
+	local url=$2
+
+	echo "Downloading audio from $url to $output_file..."
+	yt-dlp -f bestaudio --extract-audio --audio-format mp3 -o $output_file "$url"
+	echo "Download complete."
+}
+
+
+while getopts ":t:a:uh" opt; do
+    case $opt in
+        t) title="$OPTARG" ;;
+        a) artist="$OPTARG" ;;
+        u) echo "Uninstalling..."; exit 0 ;;
+        h) echo "Help message"; exit 0 ;;
+        \?) echo "Invalid option: -$OPTARG"; exit 1 ;;
+        :) echo "Option -$OPTARG requires an argument."; exit 1 ;;
+    esac
+done
+
+# Shift the positional parameters
+shift $((OPTIND - 1))
+
+
+
+if [ "$#" -ne 2 ]; then
+	show_help
+	exit 0
+elif [ "$1" == "-u" ]; then
+	if command -v yt-dlp &> /dev/null; then
+		uninstall_yt_dlp
+	fi
+	echo "Required dependencies removed."
+	exit 0
+else
+	if ! command -v yt-dlp &> /dev/null; then
+		echo "This requires 'yt-dlp'. Would you like to install it? (y/n)"
+		read response
+		if [ "$response" == "y" ]; then
+			install_yt_dlp
+		else
+			echo "yt-dlp not installed. Exiting."
+			exit 1
+		fi
+	fi
+
+	output_file=$1
+	if [[ $output_file != *.mp3 ]]; then
+		output_file="$output_file.mp3"
+	fi
+
+	url=$2
+	if [[ $url == [a-zA-Z0-9_-]{11} ]]; then
+		url="https://www.youtube.com/watch?v=$url"
+	fi
+
+
+	download_audio "$output_file" "$url"
+
+	if [ -n "$title" ] || [ -n "$artist" ]; then
+		assign_metadata "$output_file" "$title" "$artist"
+	fi
+
+	exit 0
+fi

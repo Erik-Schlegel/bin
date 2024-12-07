@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# Produce an audio file intented to be seamlessly looped.
+
+# Input arguments
+INPUT_FILE=$1
+DURATION=$2  # Crossfade duration in milliseconds
+OUTPUT_FILE=$3
+
+ORIGINAL_DURATION=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$INPUT_FILE")
+echo "Original duration: $ORIGINAL_DURATION seconds"
+
+# Check if correct number of arguments are passed
+if [ "$#" -ne 3 ]; then
+  echo "Usage: $0 <input_file> <crossfade_duration> <output_file>"
+  exit 1
+fi
+
+# Convert duration from milliseconds to seconds with three decimal places
+DURATION_SECONDS=$(awk "BEGIN {printf \"%.3f\", $DURATION / 1000}")
+
+# Apply crossfade using FFmpeg filter_complex
+ffmpeg -i "$INPUT_FILE" -i "$INPUT_FILE" -i "$INPUT_FILE" -filter_complex \
+"[0][1]acrossfade=d=$DURATION_SECONDS:c1=tri:c2=tri[first_crossfade]; \
+ [first_crossfade][2]acrossfade=d=$DURATION_SECONDS:c1=tri:c2=tri" \
+"temp_$OUTPUT_FILE"
+
+# The output file will be three times the duration of the input file, get just the middle section
+ffmpeg -i "temp_$OUTPUT_FILE" -ss "$DURATION_SECONDS" -t "$ORIGINAL_DURATION" -c copy "$OUTPUT_FILE"
+
+rm "temp_$OUTPUT_FILE"
+
+
+echo "Crossfaded audio created at: $OUTPUT_FILE"

@@ -1,0 +1,95 @@
+#!/bin/bash
+
+# Remove a package and optionally delete leftover files
+
+do_remove_package() {
+	local package_name=$1
+
+	echo "Removing package: $package_name..."
+	if ! sudo apt remove -y "$package_name"; then
+		echo "Failed to remove package. Exiting."
+		exit 1
+	fi
+
+	echo "Purging package: $package_name..."
+	sudo apt purge -y "$package_name"
+
+	echo "Running autoremove to clean up unused dependencies..."
+	sudo apt autoremove -y
+
+	echo "Cleaning apt cache..."
+	sudo apt clean
+}
+
+install_fzf() {
+	echo "fzf is not installed. Installing now..."
+	sudo apt update && sudo apt install -y fzf
+	if ! command -v fzf >/dev/null 2>&1; then
+		echo "Failed to install fzf. Exiting."
+		exit 1
+	fi
+}
+
+find_and_remove_leftovers() {
+	local package_name=$1
+
+	echo "Searching for leftover files related to: $package_name..."
+	leftover_files=$(sudo find / \( -path "/run" -o -path "/proc" \) -prune -o -name "*$package_name*" -type f -print 2>/dev/null)
+
+	if [[ -z "$leftover_files" ]]; then
+		echo "No leftover files found."
+		return
+	fi
+
+	echo "Found the following files:"
+	echo "$leftover_files"
+
+	while true; do
+		read -p "Specify action. Remove: (a)ll, (s)ome, (n)one: " user_choice
+		case "$user_choice" in
+			a|A)
+				echo "$leftover_files" | sudo xargs rm -f
+				echo "All leftover files deleted."
+				break
+				;;
+
+			s|S)
+				if ! command -v fzf >/dev/null 2>&1; then
+					install_fzf
+				fi
+
+				kept_files=$(echo "$leftover_files" | fzf --multi --prompt="Use up/down and TAB keys to select which files to keep. Unselected files will be deleted.")
+				files_to_delete=$(echo "$leftover_files" | grep -Fxv "$kept_files")
+
+				if [[ -z "$files_to_delete" ]]; then
+					echo "No files left to delete."
+				else
+					echo "$files_to_delete" | sudo xargs rm -f
+					echo "Selected files deleted."
+				fi
+				break
+				;;
+
+			n|N)
+				echo "No files were deleted."
+				break
+				;;
+
+			*)
+				echo "Invalid choice. Please enter 'a', 's', or 'n'."
+				;;
+		esac
+	done
+}
+
+if [[ $# -eq 0 ]]; then
+	echo "Usage: $0 <package-name>"
+	exit 1
+fi
+
+package_name=$1
+
+do_remove_package "$package_name"
+find_and_remove_leftovers "$package_name"
+
+echo "Complete."
