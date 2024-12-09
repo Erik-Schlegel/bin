@@ -2,64 +2,85 @@
 
 # Extract audio from a YouTube video and save it as an MP3 file.
 
-install_yt_dlp()
+install_requirements()
 {
-	echo "Installing yt-dlp..."
-	sudo wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp &> /dev/null
-	sudo chmod a+rx /usr/local/bin/yt-dlp &> /dev/null
-	echo "yt-dlp installed successfully."
+    echo "Installing required dependencies..."
+	sudo apt install -y ffmpeg &> /dev/null
+    sudo wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp &> /dev/null
+    sudo chmod a+rx /usr/local/bin/yt-dlp &> /dev/null
+    echo "Dependencies installed successfully."
 }
 
-
-uninstall_yt_dlp()
+uninstall_requirements()
 {
-	sudo rm -f /usr/local/bin/yt-dlp
-	sudo rm -f /usr/bin/yt-dlp
-	sudo rm -f /bin/yt-dlp
-	echo "yt-dlp uninstalled successfully."
+    sudo rm -f /usr/local/bin/yt-dlp
+    sudo rm -f /usr/bin/yt-dlp
+    sudo rm -f /bin/yt-dlp
+    echo "yt-dlp uninstalled successfully."
 }
-
 
 show_help()
 {
-	echo "Usage: $0 [options] <output_file> <url>"
+    echo "Usage: $0 [options] <output_file> <url>"
     echo "Options:"
     echo "  -u                Uninstall yt-dlp"
     echo "  -h                Show this help message"
     echo "  -t <title>        Set the title metadata"
     echo "  -a <artist>       Set the artist metadata"
+    echo "  -s <start_time>   Set the start time for the audio extraction (format: HH:MM:SS)"
+    echo "  -e <end_time>     Set the end time for the audio extraction (format: HH:MM:SS)"
 }
-
 
 assign_metadata()
 {
-	local file=$1
-	local title=$2
-	local artist=$3
+    local file=$1
+    local title=$2
+    local artist=$3
 
-	mv "$file" "temp_$file"
-	if [ -n "$title" ]; then
-		ffmpeg -i "temp_$file" -metadata title="$title" -metadata artist="$artist" $file
-	fi
-	rm "temp_$file"
+    mv "$file" "temp_$file"
+    if [ -n "$title" ]; then
+        ffmpeg -i "temp_$file" -metadata title="$title" -metadata artist="$artist" $file
+    fi
+    rm "temp_$file"
 }
-
 
 download_audio()
 {
-	local output_file=$1
-	local url=$2
+    local output_file=$1
+    local url=$2
+    local start_time=$3
+    local end_time=$4
 
-	echo "Downloading audio from $url to $output_file..."
-	yt-dlp -f bestaudio --extract-audio --audio-format mp3 -o $output_file "$url"
-	echo "Download complete."
+
+    echo "Downloading audio from $url"
+    yt-dlp -f bestaudio --extract-audio --audio-format opus -o "temp_$output_file" "$url"
+    echo "Download complete. Processing audio..."
+
+    echo "Trimming audio..."
+    if [ -n "$start_time" ] && [ -n "$end_time" ]; then
+        ffmpeg -loglevel error -i "temp_$output_file.opus" -ss $start_time -to $end_time -c copy "trimmed_$output_file.opus"
+    elif [ -n "$start_time" ]; then
+        ffmpeg -loglevel error -i "temp_$output_file.opus" -ss $start_time -c copy "trimmed_$output_file.opus"
+    elif [ -n "$end_time" ]; then
+        ffmpeg -loglevel error -i "temp_$output_file.opus" -ss 00:00:00 -to $end_time -c copy "trimmed_$output_file.opus"
+    else
+        mv "temp_$output_file.opus" "trimmed_$output_file.opus"
+    fi
+
+    echo "Converting trimmed audio to MP3..."
+    ffmpeg -loglevel error -i "trimmed_$output_file.opus" -c:a libmp3lame -q:a 2 "$output_file"
+
+    rm "temp_$output_file.opus" "trimmed_$output_file.opus"
+    echo "Process complete."
 }
 
 
-while getopts ":t:a:uh" opt; do
+while getopts ":t:a:s:e:uh" opt; do
     case $opt in
         t) title="$OPTARG" ;;
         a) artist="$OPTARG" ;;
+        s) start_time="$OPTARG" ;;
+        e) end_time="$OPTARG" ;;
         u) echo "Uninstalling..."; exit 0 ;;
         h) echo "Help message"; exit 0 ;;
         \?) echo "Invalid option: -$OPTARG"; exit 1 ;;
@@ -67,48 +88,46 @@ while getopts ":t:a:uh" opt; do
     esac
 done
 
+
 # Shift the positional parameters
 shift $((OPTIND - 1))
 
-
-
 if [ "$#" -ne 2 ]; then
-	show_help
-	exit 0
+    show_help
+    exit 0
 elif [ "$1" == "-u" ]; then
-	if command -v yt-dlp &> /dev/null; then
-		uninstall_yt_dlp
-	fi
-	echo "Required dependencies removed."
-	exit 0
+    if command -v yt-dlp &> /dev/null; then
+        uninstall_requirements
+    fi
+    echo "Required dependencies removed."
+    exit 0
 else
-	if ! command -v yt-dlp &> /dev/null; then
-		echo "This requires 'yt-dlp'. Would you like to install it? (y/n)"
-		read response
-		if [ "$response" == "y" ]; then
-			install_yt_dlp
-		else
-			echo "yt-dlp not installed. Exiting."
-			exit 1
-		fi
-	fi
+    if ! command -v yt-dlp &> /dev/null; then
+        echo "This requires 'yt-dlp'. Would you like to install it? (y/n)"
+        read response
+        if [ "$response" == "y" ]; then
+            install_requirements
+        else
+            echo "yt-dlp not installed. Exiting."
+            exit 1
+        fi
+    fi
 
-	output_file=$1
-	if [[ $output_file != *.mp3 ]]; then
-		output_file="$output_file.mp3"
-	fi
+    output_file=$1
+    if [[ $output_file != *.mp3 ]]; then
+        output_file="$output_file.mp3"
+    fi
 
-	url=$2
-	if [[ $url == [a-zA-Z0-9_-]{11} ]]; then
-		url="https://www.youtube.com/watch?v=$url"
-	fi
+    url=$2
+    if [[ $url == [a-zA-Z0-9_-]{11} ]]; then
+        url="https://www.youtube.com/watch?v=$url"
+    fi
 
+    download_audio "$output_file" "$url" "$start_time" "$end_time"
 
-	download_audio "$output_file" "$url"
+    if [ -n "$title" ] || [ -n "$artist" ]; then
+        assign_metadata "$output_file" "$title" "$artist"
+    fi
 
-	if [ -n "$title" ] || [ -n "$artist" ]; then
-		assign_metadata "$output_file" "$title" "$artist"
-	fi
-
-	exit 0
+    exit 0
 fi
