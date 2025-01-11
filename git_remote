@@ -5,7 +5,7 @@ if [ -z $1 ]
 	then
 		echo "Enter the name of the remote branch you want to pull. e.g. git_remote feature/zebit-some-branch";
 	else
-		git_c master
-		git fetch origin
+		git checkout main
+		git fetch
 		git checkout -b $1 origin/$1
 fi

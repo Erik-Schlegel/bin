@@ -49,6 +49,13 @@ assign_metadata()
 get_youtube_url()
 {
     local video_id=$1
+    if [[ "$video_id" =~ ^https?://([^.]+\.)?(youtube\.com|youtu\.be|youtube\-nocookie\.com)/ ]]; then
+        echo "$video_id"
+    else
+        echo "https://www.youtube.com/watch?v=${video_id}"
+    fi
+
+    local video_id=$1
     echo "https://www.youtube.com/watch?v=${video_id}"
 }
 
