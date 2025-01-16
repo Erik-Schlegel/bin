@@ -4,45 +4,59 @@
 
 install_requirements()
 {
-	echo "Installing required dependencies..."
-	sudo apt install -y ffmpeg &> /dev/null
-	sudo wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp &> /dev/null
-	sudo chmod a+rx /usr/local/bin/yt-dlp &> /dev/null
-	echo "Dependencies installed successfully."
+    echo "Installing required dependencies..."
+    sudo apt install -y ffmpeg &> /dev/null
+    sudo wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp &> /dev/null
+    sudo chmod a+rx /usr/local/bin/yt-dlp &> /dev/null
+    echo "Dependencies installed successfully."
+}
+
+update_requirements()
+{
+    local installed_version=$(yt-dlp --version 2>/dev/null || echo "none")
+	latest_version=$(wget -qO - https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest | \
+                 grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+
+    if [ "$installed_version" != "$latest_version" ]; then
+        echo "Updating yt-dlp to version $latest_version..."
+        sudo wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp &> /dev/null
+        sudo chmod a+rx /usr/local/bin/yt-dlp
+        echo "Updated to $latest_version."
+    fi
 }
 
 uninstall_requirements()
 {
-	sudo rm -f /usr/local/bin/yt-dlp
-	sudo rm -f /usr/bin/yt-dlp
-	sudo rm -f /bin/yt-dlp
-	echo "yt-dlp uninstalled successfully."
+    sudo rm -f /usr/local/bin/yt-dlp
+    sudo rm -f /usr/bin/yt-dlp
+    sudo rm -f /bin/yt-dlp
+    echo "yt-dlp uninstalled successfully."
 }
 
 show_help()
 {
-	echo "Usage: $0 [options] <output_file> <youtube-video-id>"
-	echo "Options:"
-	echo "  -u                Uninstall yt-dlp"
-	echo "  -h                Show this help message"
-	echo "  -x                Split audio into individual tracks, based on youtube chapters. Invalidates any other flags except -u and -h"
-	echo "  -t <title>        Set the title metadata"
-	echo "  -a <artist>       Set the artist metadata"
-	echo "  -s <start_time>   Set the start time for the audio extraction (format: HH:MM:SS)"
-	echo "  -e <end_time>     Set the end time for the audio extraction (format: HH:MM:SS)"
+    echo "Usage: $0 [options] <output_file> <youtube-video-id>"
+    echo "Options:"
+    echo "  -u                Uninstall yt-dlp"
+    echo "  -h                Show this help message"
+    echo "  -x                Split audio into individual tracks, based on youtube chapters. Invalidates any other flags except -u and -h"
+    echo "  -t <title>        Set the title metadata"
+    echo "  -a <artist>       Set the artist metadata"
+    echo "  -s <start_time>   Set the start time for the audio extraction (format: HH:MM:SS)"
+    echo "  -e <end_time>     Set the end time for the audio extraction (format: HH:MM:SS)"
 }
 
 assign_metadata()
 {
-	local file=$1
-	local title=$2
-	local artist=$3
+    local file=$1
+    local title=$2
+    local artist=$3
 
-	mv "$file" "temp_$file"
-	if [ -n "$title" ]; then
-		ffmpeg -i "temp_$file" -metadata title="$title" -metadata artist="$artist" $file
-	fi
-	rm "temp_$file"
+    mv "$file" "temp_$file"
+    if [ -n "$title" ]; then
+        ffmpeg -i "temp_$file" -metadata title="$title" -metadata artist="$artist" $file
+    fi
+    rm "temp_$file"
 }
 
 
@@ -52,11 +66,8 @@ get_youtube_url()
     if [[ "$video_id" =~ ^https?://([^.]+\.)?(youtube\.com|youtu\.be|youtube\-nocookie\.com)/ ]]; then
         echo "$video_id"
     else
-        echo "https://www.youtube.com/watch?v=${video_id}"
+        echo "https://youtu.be/${video_id}"
     fi
-
-    local video_id=$1
-    echo "https://www.youtube.com/watch?v=${video_id}"
 }
 
 
@@ -65,7 +76,9 @@ download_and_split()
     local folder=$1
     local video_id=$2
 
-	url=$(get_youtube_url "$video_id")
+    url=$(get_youtube_url "$video_id")
+
+    echo $url
 
     # Check for chapters
     if ! yt-dlp --print "%(chapters)s" "$url" | grep -q "title"; then
@@ -74,12 +87,12 @@ download_and_split()
     fi
 
     mkdir -p "$folder"
-	echo "[Original Video]($url)" > "$folder/readme.md"
+    echo "[Original Video]($url)" > "$folder/readme.md"
 
     yt-dlp --split-chapters -f bestaudio --extract-audio --audio-format mp3 \
-		-P "$folder" \
-		-o "chapter:%(section_title)s.%(ext)s" \
-        "$url"
+    -P "$folder" \
+    -o "chapter:%(section_title)s.%(ext)s" \
+    "$url"
 
     if [ $? -ne 0 ]; then
         echo "Error: Failed to split chapters"
@@ -90,9 +103,9 @@ download_and_split()
     for file in "$folder"/*.mp3; do
         if [ -f "$file" ]; then
             newname=$(basename "$file" | tr -d "'" | \
-                     sed 's/\([A-Z]\)/ \1/g' | \
-                     awk '{for(i=1;i<=NF;i++)sub(/./,toupper(substr($i,1,1)),$i)}1' | \
-                     tr -d " ")
+                sed 's/\([A-Z]\)/ \1/g' | \
+                awk '{for(i=1;i<=NF;i++)sub(/./,toupper(substr($i,1,1)),$i)}1' | \
+            tr -d " ")
             mv "$file" "$folder/$newname"
         fi
     done
@@ -105,64 +118,64 @@ download_and_split()
 
 download_full_audio()
 {
-	local output_file=$1
-	local video_id=$2
+    local output_file=$1
+    local video_id=$2
 
-	url=$(get_youtube_url "$video_id")
+    url=$(get_youtube_url "$video_id")
 
-	echo "Downloading audio from $url"
+    echo "Downloading audio from $url"
 
-	yt-dlp -f bestaudio --extract-audio --audio-format opus -o "temp_$output_file" "$url"
-	echo "Download complete. Processing audio..."
+    yt-dlp -f bestaudio --extract-audio --audio-format opus -o "temp_$output_file" "$url"
+    echo "Download complete. Processing audio..."
 }
 
 
 trim_audio()
 {
-	local output_file=$1
-	local start_time=$3
-	local end_time=$4
+    local output_file=$1
+    local start_time=$3
+    local end_time=$4
 
-	if [ -n "$start_time" ] || [ -n "$end_time" ]; then
-		echo "Trimming audio..."
-	fi
+    if [ -n "$start_time" ] || [ -n "$end_time" ]; then
+        echo "Trimming audio..."
+    fi
 
-	if [ -n "$start_time" ] && [ -n "$end_time" ]; then
-		ffmpeg -loglevel error -i "temp_$output_file.opus" -ss $start_time -to $end_time -c copy "trimmed_$output_file.opus"
-	elif [ -n "$start_time" ]; then
-		ffmpeg -loglevel error -i "temp_$output_file.opus" -ss $start_time -c copy "trimmed_$output_file.opus"
-	elif [ -n "$end_time" ]; then
-		ffmpeg -loglevel error -i "temp_$output_file.opus" -ss 00:00:00 -to $end_time -c copy "trimmed_$output_file.opus"
-	else
-		mv "temp_$output_file.opus" "trimmed_$output_file.opus"
-	fi
+    if [ -n "$start_time" ] && [ -n "$end_time" ]; then
+        ffmpeg -loglevel error -i "temp_$output_file.opus" -ss $start_time -to $end_time -c copy "trimmed_$output_file.opus"
+        elif [ -n "$start_time" ]; then
+        ffmpeg -loglevel error -i "temp_$output_file.opus" -ss $start_time -c copy "trimmed_$output_file.opus"
+        elif [ -n "$end_time" ]; then
+        ffmpeg -loglevel error -i "temp_$output_file.opus" -ss 00:00:00 -to $end_time -c copy "trimmed_$output_file.opus"
+    else
+        mv "temp_$output_file.opus" "trimmed_$output_file.opus"
+    fi
 }
 
 
 convert_audio()
 {
-	local output_file=$1
+    local output_file=$1
 
-	echo "Converting audio to MP3..."
-	ffmpeg -loglevel error -i "trimmed_$output_file.opus" -c:a libmp3lame -q:a 2 "$output_file"
+    echo "Converting audio to MP3..."
+    ffmpeg -loglevel error -i "trimmed_$output_file.opus" -c:a libmp3lame -q:a 2 "$output_file"
 
-	rm "temp_$output_file.opus" "trimmed_$output_file.opus"
-	echo "Process complete."
+    rm "temp_$output_file.opus" "trimmed_$output_file.opus"
+    echo "Process complete."
 }
 
 
 while getopts ":t:a:s:e:xuh" opt; do
-	case $opt in
-		x) split=true ;;
-		t) title="$OPTARG" ;;
-		a) artist="$OPTARG" ;;
-		s) start_time="$OPTARG" ;;
-		e) end_time="$OPTARG" ;;
-		u) echo "Uninstalling..."; exit 0 ;;
-		h) echo "Help message"; exit 0 ;;
-		\?) echo "Invalid option: -$OPTARG"; exit 1 ;;
-		:) echo "Option -$OPTARG requires an argument."; exit 1 ;;
-	esac
+    case $opt in
+        x) split=true ;;
+        t) title="$OPTARG" ;;
+        a) artist="$OPTARG" ;;
+        s) start_time="$OPTARG" ;;
+        e) end_time="$OPTARG" ;;
+        u) echo "Uninstalling..."; exit 0 ;;
+        h) echo "Help message"; exit 0 ;;
+        \?) echo "Invalid option: -$OPTARG"; exit 1 ;;
+        :) echo "Option -$OPTARG requires an argument."; exit 1 ;;
+    esac
 done
 
 
@@ -170,49 +183,51 @@ done
 shift $((OPTIND - 1))
 
 if [ "$#" -ne 2 ]; then
-	show_help
-	exit 0
-elif [ "$1" == "-u" ]; then
-	if command -v yt-dlp &> /dev/null; then
-		uninstall_requirements
-	fi
-	echo "Required dependencies removed."
-	exit 0
+    show_help
+    exit 0
+    elif [ "$1" == "-u" ]; then
+    if command -v yt-dlp &> /dev/null; then
+        uninstall_requirements
+    fi
+    echo "Required dependencies removed."
+    exit 0
 else
-	if ! command -v yt-dlp &> /dev/null; then
-		echo "This requires 'yt-dlp'. Would you like to install it? (y/n)"
-		read response
-		if [ "$response" == "y" ]; then
-			install_requirements
-		else
-			echo "yt-dlp not installed. Exiting."
-			exit 1
-		fi
-	fi
+    if ! command -v yt-dlp &> /dev/null; then
+        echo "This requires 'yt-dlp'. Would you like to install it? (y/n)"
+        read response
+        if [ "$response" == "y" ]; then
+            install_requirements
+        else
+            echo "yt-dlp not installed. Exiting."
+            exit 1
+        fi
+    else
+        update_requirements
+    fi
 
-	output_file=$1
-	video_id=$2
+    output_file=$1
+    video_id=$2
 
 
-	if [ -n "$split" ]; then
-		download_and_split "$output_file" "$video_id"
-		exit 0
-	else
-		if [[ $output_file != *.mp3 ]]; then
-			output_file="$output_file.mp3"
-		fi
-		# Note: we don't use yt-dlp simply. YT-DLP seems DL -> convert > trim. That's quite slow.
-		# I use yt-dlp to extract and download the audio. Which I then trim, and convert.
-		# This performance gain is measured in (tens of) minutes for large audio files.
-		download_full_audio "$output_file" "$video_id"
-		trim_audio "$output_file" "$start_time" "$end_time"
-		convert_audio "$output_file"
+    if [ -n "$split" ]; then
+        download_and_split "$output_file" "$video_id"
+        exit 0
+    else
+        if [[ $output_file != *.mp3 ]]; then
+            output_file="$output_file.mp3"
+        fi
+        # Note: we don't use yt-dlp simply. YT-DLP seems DL -> convert > trim. That's quite slow.
+        # I use yt-dlp to extract and download the audio. Which I then trim, and convert.
+        # This performance gain is measured in (tens of) minutes for large audio files.
+        download_full_audio "$output_file" "$video_id"
+        trim_audio "$output_file" "$start_time" "$end_time"
+        convert_audio "$output_file"
 
-		if [ -n "$title" ] || [ -n "$artist" ]; then
-			assign_metadata "$output_file" "$title" "$artist"
-		fi
+        if [ -n "$title" ] || [ -n "$artist" ]; then
+            assign_metadata "$output_file" "$title" "$artist"
+        fi
 
-		exit 0
-	fi
+        exit 0
+    fi
 
 fi
