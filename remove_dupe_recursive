@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+# Remove duplicate files in a folder and its subfolders, leaving only one copy of each file (the first one found).
+# Usage: ./remove_dupe_recursive /path/to/top-level-folder
+
+folder="$1"
+if [ -z "$folder" ]; then
+  echo "Please provide a folder path."
+  exit 1
+fi
+
+declare -A seen
+
+# Traverse all files in subfolders by filename
+find "$folder" -type f | while read -r file; do
+  filename=$(basename "$file")
+  if [[ -v "seen[$filename]" ]]; then
+    echo "Removing duplicate: $file"
+    rm "$file"
+  else
+    if [[ "$filename" != "readme.md" ]]; then
+        seen["$filename"]=1
+    fi
+  fi
+done
