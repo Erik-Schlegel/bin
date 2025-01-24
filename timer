@@ -1,2 +1,2 @@
 #!/bin/bash
-python timer.py
+python ~/bin/timer.py
