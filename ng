@@ -1,59 +1,82 @@
 #!/bin/bash
 
-ngrok_command="ngrok http";
-flags="--domain=$NGROK_SUBDOMAIN.ngrok.io"
-inspect="false";
-port="5173"
+# Install/update ngrok, create a config, and launch ngrok
 
-random_string=$(tr -dc 'a-zA-Z0-9!@#$%^&*-=?,./' < /dev/urandom | fold -w 10 | head -n 1)
-basicAuth="$NGROK_UN:$random_string";
-
-process_option()
-{
-    case $1 in
-        i)
-            inspect="true"
-            ;;
-        a)
-            echo "Url will be: http://$basicAuth@$NGROK_SUBDOMAIN.ngrok.io";
-            read -p "Press enter to continue";
-            flags+=" --basic-auth=$basicAuth";
-            ;;
-        o)
-            flags+=" --oauth=google --oauth-allow-email $NGROK_OAUTH_EMAIL"
-            ;;
-        *)
-            echo "Invalid option: -$1" >&2
-            exit 1
-            ;;
-    esac
+install_ngrok() {
+  curl -sSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
+  echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
+  sudo apt update && sudo apt install -y ngrok
 }
 
 
-for arg in "$@"; do
+update_ngrok() {
+  if apt list --upgradable 2>/dev/null | grep -q "ngrok"; then
+    echo "Updating ngrok..."
+    install_ngrok
+  fi
+}
 
-    if [[ $arg == -* && ${#arg} > 2 ]]; then
-        # Handle grouped flags like -io
-        for (( i=1; i<${#arg}; i++ )); do
-            process_option "${arg:$i:1}"
-        done
 
-    elif [[ $arg == -* ]]; then
-        # Handle single character flags like -i or -o
-        process_option "${arg:1}"
-
-    elif [[ $arg =~ ^[0-9]+$ ]]; then
-        # Append port directly if argument is numeric
-        port="$arg"
-
+is_config_existing() {
+    if [ -f ~/.config/ngrok/ngrok.yml ]; then
+        return 0  # true
     else
-        echo "Invalid argument: $arg" >&2
-        exit 1
+        return 1  # false
     fi
-done
-
-flags+=" --inspect=$inspect"
+}
 
 
-echo "$ngrok_command $port $flags"
-eval "$ngrok_command $port $flags"
+is_valid_config() {
+    output=$(ngrok config check 2>&1)
+    if [[ "$output" =~ Valid[[:space:]]configuration[[:space:]]file[[:space:]]at[[:space:]].*\.config/ngrok/ngrok\.yml ]]; then
+        return 0  # true
+    else
+        return 1  # false
+    fi
+}
+
+
+make_template_config() {
+    mkdir -p ~/.config/ngrok
+
+    cat <<EOF > ~/.config/ngrok/ngrok.yml
+version: "3"
+agent:
+    authtoken: ??????
+tunnels:
+    ngrok-tunnel:
+        proto: http
+        addr: 8080
+        url: ????????
+EOF
+}
+
+
+if command -v ngrok &>/dev/null; then
+  update_ngrok
+else
+  read -p "ngrok is not installed. Install now? (y/n) " answer
+  if [ "$answer" = "y" ] || [ "$answer" = "Y" ]; then
+    echo "Installing ngrok..."
+    install_ngrok
+  else
+    echo "Skipping ngrok installation."
+    exit 1
+  fi
+fi
+
+
+if ! is_config_existing; then
+    make_template_config
+    echo -e "Next, we'll add your ngrok authtoken and static url to the ngrok config. You'll find this data at:\n"
+    echo -e "https://dashboard.ngrok.com/get-started/setup/linux\n"
+    read -p "Press enter to open the config editor."
+    nano ~/.config/ngrok/ngrok.yml
+    echo -e "ngrok configuration file created.\n\n"
+    read -p "Okay. It appears you're all set. Press enter to launch ngrok."
+elif ! is_valid_config; then
+    echo "ngrok configuration file is invalid. Please check the config file at ~/.config/ngrok/ngrok.yml."
+    exit 1
+fi
+
+ngrok start ngrok-tunnel

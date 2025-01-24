@@ -142,9 +142,9 @@ trim_audio()
 
     if [ -n "$start_time" ] && [ -n "$end_time" ]; then
         ffmpeg -loglevel error -i "temp_$output_file.opus" -ss $start_time -to $end_time -c copy "trimmed_$output_file.opus"
-        elif [ -n "$start_time" ]; then
+    elif [ -n "$start_time" ]; then
         ffmpeg -loglevel error -i "temp_$output_file.opus" -ss $start_time -c copy "trimmed_$output_file.opus"
-        elif [ -n "$end_time" ]; then
+    elif [ -n "$end_time" ]; then
         ffmpeg -loglevel error -i "temp_$output_file.opus" -ss 00:00:00 -to $end_time -c copy "trimmed_$output_file.opus"
     else
         mv "temp_$output_file.opus" "trimmed_$output_file.opus"
