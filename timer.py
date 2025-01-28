@@ -7,4 +7,16 @@ input("Press Enter to stop the stopwatch")
 end_time = time.time()
 
 elapsed_time = end_time - start_time
-print(f"Elapsed time: {elapsed_time:.2f} seconds\n")
+
+hours = int(elapsed_time // 3600)
+minutes = int((elapsed_time % 3600) // 60)
+seconds = int(elapsed_time % 60)
+
+time_string = ""
+if hours > 0:
+    time_string += f"{hours}h "
+if minutes > 0 or hours > 0:
+    time_string += f"{minutes}m "
+time_string += f"{seconds}s"
+
+print(time_string.strip())
