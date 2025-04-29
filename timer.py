@@ -3,6 +3,7 @@ import os
 
 try:
     while True:
+        print('---')
         input("Press Enter to start the stopwatch")
         start_time = time.time()
 
@@ -21,8 +22,7 @@ try:
         if minutes > 0 or hours > 0:
             time_string += f"{minutes}m "
         time_string += f"{seconds}s"
-        os.system('cls')
 
         print(time_string.strip())
 except KeyboardInterrupt:
-    print('\n')
+    os.system('cls')
