@@ -133,8 +133,8 @@ download_full_audio()
 trim_audio()
 {
     local output_file=$1
-    local start_time=$3
-    local end_time=$4
+    local start_time=$2
+    local end_time=$3
 
     if [ -n "$start_time" ] || [ -n "$end_time" ]; then
         echo "Trimming audio..."
@@ -217,7 +217,7 @@ else
             output_file="$output_file.mp3"
         fi
         # Note: we don't use yt-dlp simply. YT-DLP seems DL -> convert > trim. That's quite slow.
-        # I use yt-dlp to extract and download the audio. Which I then trim, and convert.
+        # I use yt-dlp to extract and download the audio. Which I trim, and finally convert.
         # This performance gain is measured in (tens of) minutes for large audio files.
         download_full_audio "$output_file" "$video_id"
         trim_audio "$output_file" "$start_time" "$end_time"

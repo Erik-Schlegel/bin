@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Update, upgrade, and clean up the system
+
+set -e  # Exit on error
+
+sudo apt update
+sudo apt upgrade -y
+sudo apt dist-upgrade -y  # Handles dependencies better than 'apt upgrade'
+sudo apt autoremove -y # Remove unused packages
+
+
+sudo apt autoclean # Clean package cache
+rc_pkgs=$(dpkg -l | awk '/^rc/ {print $2}')
+if [ -n "$rc_pkgs" ]; then
+    #Remove old config files from uninstalled packages
+    sudo dpkg --purge $rc_pkgs
+fi
+
+# Clean all apt cache (not just obsolete)
+sudo apt clean
+
+# Keep current logs; clean old logs.
+sudo find /var/log -type f -name "*.gz" -delete
+sudo find /var/log -type f -name "*.1" -delete
+sudo journalctl --vacuum-time=2weeks
+
+echo "System maintenance complete!"
