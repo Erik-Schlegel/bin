@@ -25,4 +25,10 @@ sudo find /var/log -type f -name "*.gz" -delete
 sudo find /var/log -type f -name "*.1" -delete
 sudo journalctl --vacuum-time=2weeks
 
+
+# Update/clean flatpak
+flatpak update -y
+flatpak uninstall --unused -y
+
+
 echo "System maintenance complete!"
