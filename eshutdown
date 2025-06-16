@@ -1,0 +1,6 @@
+#!/bin/sh
+# This script is used to shut down the system immediately without any warnings or prompts.
+# Works around egpu issues that prevent shutdown from working properly.
+
+sudo systemctl poweroff --force --no-wall
+
