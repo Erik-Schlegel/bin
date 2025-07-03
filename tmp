@@ -1,0 +1,11 @@
+#!/bin/sh
+# Create tmux instance with panels at predefined locations. 
+
+tmux new-session -d -s piper \
+	\; split-window -h \
+	\; select-layout '883c,238x58,0,0{217x58,0,0,0,20x58,218,0,1}' \
+	\; send-keys -t piper:0.1 'alsamixer' C-m \
+	\; select-pane -t 0 \
+	\; attach-session -t piper
+
+
