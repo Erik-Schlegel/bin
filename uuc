@@ -1,23 +1,19 @@
 #!/bin/bash
-
-# Update, upgrade, and clean up the system
+# Update, upgrade, and clean the update cache.
 
 set -e  # Exit on error
 
 sudo apt update
 sudo apt upgrade -y
-sudo apt dist-upgrade -y  # Handles dependencies better than 'apt upgrade'
-sudo apt autoremove -y # Remove unused packages
+sudo apt dist-upgrade -y
+sudo apt autoremove -y
 
-
-sudo apt autoclean # Clean package cache
+sudo apt autoclean
 rc_pkgs=$(dpkg -l | awk '/^rc/ {print $2}')
 if [ -n "$rc_pkgs" ]; then
-    #Remove old config files from uninstalled packages
-    sudo dpkg --purge $rc_pkgs
+  sudo dpkg --purge $rc_pkgs
 fi
 
-# Clean all apt cache (not just obsolete)
 sudo apt clean
 
 # Keep current logs; clean old logs.
@@ -25,10 +21,12 @@ sudo find /var/log -type f -name "*.gz" -delete
 sudo find /var/log -type f -name "*.1" -delete
 sudo journalctl --vacuum-time=2weeks
 
-
-# Update/clean flatpak
-flatpak update -y
-flatpak uninstall --unused -y
-
+# Update/clean Flatpak if installed
+if command -v flatpak >/dev/null 2>&1; then
+  flatpak update -y
+  flatpak uninstall --unused -y
+else
+  echo "Flatpak not installed; skipping Flatpak steps."
+fi
 
 echo "System maintenance complete!"
