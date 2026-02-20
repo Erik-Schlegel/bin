@@ -1,0 +1,41 @@
+#!/bin/bash
+SCREEN="eDP-1"
+
+# 1. Cleanup function: Restores settings if script is interrupted
+cleanup() {
+    echo -e "\nRestoring system state..."
+    kill $HEART_PID 2>/dev/null
+    xrandr --output "$SCREEN" --auto
+    xset +dpms
+    xset s on
+    exit
+}
+
+# Trap signals (like Ctrl+C or terminal close) to run cleanup
+trap cleanup SIGINT SIGTERM
+
+# 2. Heartbeat function: Taps 'Shift' every 50s to keep the OS from locking
+heartbeat() {
+    while true; do
+        sleep 50
+        xdotool key shift
+    done
+}
+
+# 3. Execution
+xset -dpms
+xset s off
+
+heartbeat &
+HEART_PID=$!
+
+echo "System Stay-Awake active. Heartbeat PID: $HEART_PID"
+echo "Screen turning off in 1 second..."
+sleep 1 && xrandr --output "$SCREEN" --off
+
+# 4. Wait for keypress
+# The terminal window MUST stay open and have focus for this to catch your key
+read -n 1 -s -r
+
+# 5. Restore
+cleanup

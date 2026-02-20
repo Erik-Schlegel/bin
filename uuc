@@ -3,6 +3,32 @@
 
 set -e  # Exit on error
 
+# --- Parse optional -s (shutdown) / -r (reboot) flag ---
+ACTION="none"
+if [[ $# -gt 1 ]]; then
+  echo "usage: $(basename "$0") [-s|-r]" >&2
+  exit 2
+fi
+if [[ $# -eq 1 ]]; then
+  case "$1" in
+    -s) ACTION="shutdown" ;;
+    -r) ACTION="reboot" ;;
+    -h|--help)
+      echo "usage: $(basename "$0") [-s|-r]"
+      echo "  -s  shutdown after updates"
+      echo "  -r  reboot after updates"
+      exit 0
+      ;;
+    *) echo "error: unknown option: $1" >&2; exit 2 ;;
+  esac
+fi
+
+# --- Renew sudo timestamp up front & keep it alive during the run ---
+sudo -v
+( while true; do sudo -n true 2>/dev/null || exit 0; sleep 60; kill -0 "$$" 2>/dev/null || exit 0; done ) &
+KEEPALIVE_PID=$!
+trap 'kill "$KEEPALIVE_PID" 2>/dev/null || true' EXIT
+
 sudo apt update
 sudo apt upgrade -y
 sudo apt dist-upgrade -y
@@ -30,3 +56,10 @@ else
 fi
 
 echo "System maintenance complete!"
+
+# --- Post-action ---
+case "$ACTION" in
+  shutdown) echo "Shutting down…"; sudo esh ;;
+  reboot)   echo "Rebooting…";    sudo reboot now ;;
+  none)     ;;  # leave system running
+esac
